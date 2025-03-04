@@ -752,8 +752,6 @@ app.get("/getsubmissiontime", async (req, res) => {
 
 // POST endpoint for compiling and running code
 app.post('/compile', async (req, res) => {
-   
-   
     const { language, code, action,input, testcases, email } = req.body;
     console.log(language);
     console.log(code);
@@ -761,14 +759,15 @@ app.post('/compile', async (req, res) => {
 
     if (action === "run") {
         if (language === "python") {
-            let envData = {};
+            let envData = { OS: "windows" };
 
             if (input) {
                 compiler.compilePythonWithInput(envData, code, input, (data) => {
                     if (data.error) {
                         return res.send({ status: false, message: data.error });
                     }
-                    res.send({ status: true , data: data });
+                    res.send({ status: true , output: data.output });
+                    console.log("Mydata",data.output);
                 });
             } else {
                 compiler.compilePython(envData, code, (data) => {
@@ -778,6 +777,7 @@ app.post('/compile', async (req, res) => {
                     res.send({ status: true , data: data });
                 });
             }
+        
         } else if (language === "cpp" || language === "c") {
             let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
 
@@ -806,27 +806,22 @@ app.post('/compile', async (req, res) => {
         if (language === "python") {
             let envData = { OS: "windows" };
 
-            promises = testcases.map((testcase) => {
-                return new Promise((resolve) => {
-                    compiler.compilePythonWithInput(envData, code, testcase.input, (data) => {
-                        if (data.error) {
-                            return res.send({ status: "error", message: "Compilation failed: " + data.error });
-                        }
-
-                        let actualOutput = data.output.trim();
-                        let expectedOutput = testcase.expectedOutput.trim();
-
-                        if (actualOutput === expectedOutput) {
-                            passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                        } else {
-                            failedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                            failedCount++;
-                        }
-                        resolve();
-                    });
+            if (input) {
+                compiler.compilePythonWithInput(envData, code, input, (data) => {
+                    if (data.error) {
+                        return res.send({ status: false, message: data.error });
+                    }
+                    res.send({ status: true , data: data });
                 });
-            });
-        } else if (language === "cpp" || language === "c") {
+            } else {
+                compiler.compilePython(envData, code, (data) => {
+                    if (data.error) {
+                        return res.send({ status: false, message: data.error });
+                    }
+                    res.send({ status: true , data: data });
+                });
+            }
+        }  else if (language === "cpp" || language === "c") {
             let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
