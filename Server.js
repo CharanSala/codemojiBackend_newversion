@@ -759,7 +759,7 @@ app.post('/compile', async (req, res) => {
 
     if (action === "run") {
         if (language === "python") {
-            let envData = { OS: "windows" };
+            let envData = { OS: "linux" };
 
             if (input) {
                 compiler.compilePythonWithInput(envData, code, input, (data) => {
@@ -779,7 +779,7 @@ app.post('/compile', async (req, res) => {
             }
         
         } else if (language === "cpp" || language === "c") {
-            let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+            let envData = { OS: "linux", cmd: "g++", options: { timeout: 10000 } };
 
             if (input) {
                 compiler.compileCPPWithInput(envData, code, input, (data) => {
@@ -804,7 +804,7 @@ app.post('/compile', async (req, res) => {
         let promises = [];
 
         if (language === "python") {
-            let envData = { OS: "windows" };
+            let envData = { OS: "linux" };
 
             if (input) {
                 compiler.compilePythonWithInput(envData, code, input, (data) => {
@@ -822,7 +822,7 @@ app.post('/compile', async (req, res) => {
                 });
             }
         }  else if (language === "cpp" || language === "c") {
-            let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+            let envData = { OS: "linux", cmd: "g++", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
                 return new Promise((resolve) => {
