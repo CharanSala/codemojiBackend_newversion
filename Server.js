@@ -761,7 +761,7 @@ app.post('/compile', async (req, res) => {
 
     if (action === "run") {
         if (language === "python") {
-            let envData = { OS: "windows" };
+            let envData = {};
 
             if (input) {
                 compiler.compilePythonWithInput(envData, code, input, (data) => {
