@@ -908,9 +908,9 @@ app.post('/compile', async (req, res) => {
 
 
 // Start the server
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//     console.log(`Server is running on http://localhost:${port}`);
+// });
 
 // Clean up temporary files on exit
 process.on('SIGINT', () => {
