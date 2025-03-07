@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import Participant from './Mongo.js';
 import crypto, { randomBytes } from "crypto";
 import connectDB from './db.js';
-
+import moment from 'moment-timezone';
 import dotenv from "dotenv";
 
 
@@ -44,6 +44,187 @@ let currentUserEmail = "";
 // };
 
 // printParticipants();
+app.post("/update-timer", async (req, res) => {
+    const { email, time } = req.body;
+
+    if (!email || time === undefined) {
+        return res.status(400).json({ error: "Email and time are required" });
+    }
+
+    try {
+        let timer = await Participant.findOne({ email });
+        if (!timer) {
+            timer = new Participant({ email, timeLeft: time });
+        } else {
+            timer.timeLeft = time;
+        }
+        await timer.save();
+        res.status(200).json({ message: "Time updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update time" });
+    }
+});
+app.post("/update-level2timer", async (req, res) => {
+    const { email, time } = req.body;
+
+    if (!email || time === undefined) {
+        return res.status(400).json({ error: "Email and time are required" });
+    }
+
+    try {
+        let timer = await Participant.findOne({ email });
+        if (!timer) {
+            timer = new Participant({ email, timeLeft: time });
+        } else {
+            timer.level2timeLeft = time;
+        }
+        await timer.save();
+        res.status(200).json({ message: "Time updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update time" });
+    }
+});
+
+app.post("/update-level3timer", async (req, res) => {
+    const { email, time } = req.body;
+
+    if (!email || time === undefined) {
+        return res.status(400).json({ error: "Email and time are required" });
+    }
+
+    try {
+        let timer = await Participant.findOne({ email });
+        if (!timer) {
+            timer = new Participant({ email, timeLeft: time });
+        } else {
+            timer.level3timeLeft = time;
+        }
+        await timer.save();
+        res.status(200).json({ message: "Time updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update time" });
+    }
+});
+
+
+app.post("/update-level1submissiontime", async (req, res) => {
+    const { email, time } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+    try {
+        const participant = await Participant.findOne({ email });
+        if (!participant) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        participant.round2submissiontime=time;
+        await participant.save();
+        
+        res.status(200).json({ msg: "saved"});
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+
+});
+app.post("/update-level2submissiontime", async (req, res) => {
+    const { email, time } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+    try {
+        const participant = await Participant.findOne({ email });
+        if (!participant) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        participant.round1submissiontime=time;
+        await participant.save();
+        
+        res.status(200).json({ msg: "saved"});
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+
+});
+
+app.post("/update-level3submissiontime", async (req, res) => {
+    const { email, time } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+    try {
+        const participant = await Participant.findOne({ email });
+        if (!participant) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        participant.round3submissiontime=time;
+        await participant.save();
+        
+        res.status(200).json({ msg: "saved"});
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+
+});
+
+app.get("/get-timer", async (req, res) => {
+    const { email } = req.query;
+
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+
+    try {
+        const timer = await Participant.findOne({ email });
+        if (!timer) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        res.status(200).json({ timeLeft: timer.timeLeft });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+});
+app.get("/get-level2timer", async (req, res) => {
+    const { email } = req.query;
+
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+
+    try {
+        const timer = await Participant.findOne({ email });
+        if (!timer) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        res.status(200).json({ timeLeft: timer.level2timeLeft });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+});
+
+app.get("/get-level3timer", async (req, res) => {
+    const { email } = req.query;
+
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+
+    try {
+        const timer = await Participant.findOne({ email });
+        if (!timer) {
+            return res.status(404).json({ error: "Timer not found" });
+        }
+
+        res.status(200).json({ timeLeft: timer.level3timeLeft });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch time" });
+    }
+});
+
 
 
 app.get("/getPoints1", async (req, res) => {
@@ -75,8 +256,8 @@ app.post("/register", async (req, res) => {
         if (!name || !email) {
             return res.status(400).json({ error: "Name and Email are required!" });
         }
-
-        const newParticipant = new Participant({ name, email });
+      
+        const newParticipant = new Participant({ name, email }); 
         await newParticipant.save();
         
         res.status(201).json({ message: "✅ Registration Successful", participant: newParticipant });
@@ -411,14 +592,20 @@ app.post('/verify1', (req, res) => {
     const isCorrect = userValues.every((value, index) => value === correctValues[index]);
 
     if (isCorrect) {
-
-        const sub = new Date().toLocaleString('en-GB', { 
+        
+         const sub = new Intl.DateTimeFormat('en-GB', { 
+            timeZone: 'Asia/Kolkata', 
             hour12: false, 
             hour: '2-digit', 
             minute: '2-digit', 
             second: '2-digit' 
-        }); 
-       
+        }).format(new Date());
+        
+        console.log(sub);
+        
+        console.log(sub);
+        
+        
         return res.json({
             message: '✅ Success! Your output is correct!',
             submissionTime: sub,
@@ -453,13 +640,16 @@ app.post('/verify', async (req, res) => {
     const isCorrect = userValues.every((value, index) => value === correctValues[index]);
 
     if (isCorrect) {
-        const sub = new Date().toLocaleString('en-GB', { 
+        const sub = new Intl.DateTimeFormat('en-GB', { 
+            timeZone: 'Asia/Kolkata', 
             hour12: false, 
             hour: '2-digit', 
             minute: '2-digit', 
             second: '2-digit' 
-        }); 
-
+        }).format(new Date());
+        
+        console.log(sub);
+        
     try {
         // Find participant by ID and update their record with the submitted code
         const participant = await Participant.findOne({ email: email });
@@ -470,6 +660,7 @@ app.post('/verify', async (req, res) => {
 
         // Save the code in the 'submittedCode' field of the participant
         participant.round2submissiontime = sub;
+        
         await participant.save();
 
         participant.points = 50; 
@@ -629,12 +820,13 @@ app.post('/outputverify', async (req, res) => {
         }
 
         if (userOutput.trim() === output.toString()) {
-            const sub = new Date().toLocaleString('en-GB', { 
+            const sub = new Intl.DateTimeFormat('en-GB', { 
+                timeZone: 'Asia/Kolkata', 
                 hour12: false, 
                 hour: '2-digit', 
                 minute: '2-digit', 
                 second: '2-digit' 
-            });
+            }).format(new Date());
 
             // Store submission time in DB
             participant.round3submissiontime = sub;
@@ -869,13 +1061,15 @@ app.post('/compile', async (req, res) => {
 
 
 
-            const time = new Date().toLocaleString('en-GB', { 
+            const time = new Intl.DateTimeFormat('en-GB', { 
+                timeZone: 'Asia/Kolkata', 
                 hour12: false, 
                 hour: '2-digit', 
                 minute: '2-digit', 
                 second: '2-digit' 
-            });
+            }).format(new Date());
 
+        
             
             participant.round1submissiontime = time; // Store time as a string
             await participant.save();
