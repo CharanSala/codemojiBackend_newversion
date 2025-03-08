@@ -523,6 +523,83 @@ app.post("/participantverify", async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 });
+app.post("/check-round2", async (req, res) => {
+    try {
+      const { email } = req.body;
+  
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+  
+      const user = await Participant.findOne({ email });
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      user.round2submissiontime = "0";
+      await user.save();
+  
+      return res.status(200).json({ message: "Round 2 submission time reset successfully" });
+  
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/check-round1", async (req, res) => {
+    try {
+      const { email } = req.body;
+  
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+  
+      const user = await Participant.findOne({ email });
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      user.round1submissiontime = "0";
+      await user.save();
+
+      return res.status(200).json({ message: "Round 2 submission time reset successfully" });
+  
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  app.post("/check-round3", async (req, res) => {
+    try {
+      const { email } = req.body;
+  
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+  
+      const user = await Participant.findOne({ email });
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      user.round3submissiontime = "0";
+      await user.save();
+
+      return res.status(200).json({ message: "Round 3 submission time reset successfully" });
+  
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+
+  
 app.get("/getParticipant", async (req, res) => {
     try {
         const email = req.query.email;
@@ -697,7 +774,7 @@ app.post("/updatepoints", async (req, res) => {
         }
 
         // Ensure points don't go negative
-        const updatedPoints = Math.max(0, participant.points - points);
+        const updatedPoints = participant.points - points;
 
         // Update points in the database
         participant.points = updatedPoints;
@@ -730,7 +807,7 @@ app.post("/updatepoints1", async (req, res) => {
         }
 
         // Ensure points don't go negative
-        const updatedPoints = Math.max(0, participant.points - points);
+        const updatedPoints = participant.points - points;
 
         // Update points in the database
         participant.points = updatedPoints;
@@ -762,7 +839,7 @@ app.post("/updatepoints2", async (req, res) => {
         }
 
         // Ensure points don't go negative
-        const updatedPoints = Math.max(0, participant.points - points);
+        const updatedPoints = participant.points - points;
 
         // Update points in the database
         participant.points = updatedPoints;
@@ -996,24 +1073,29 @@ app.post('/compile', async (req, res) => {
         let promises = [];
 
         if (language === "python") {
-            let envData = { OS: "linux" };
-
-            if (input) {
-                compiler.compilePythonWithInput(envData, code, input, (data) => {
-                    if (data.error) {
-                        return res.send({ status: false, message: data.error });
-                    }
-                    res.send({ status: true , data: data });
+            let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
+        
+            promises = testcases.map((testcase) => {
+                return new Promise((resolve) => {
+                    compiler.compilePythonWithInput(envData, code, testcase.input, (data) => {
+                        if (data.error) {
+                            return res.send({ status: "error", message: "Execution failed: " + data.error });
+                        }
+        
+                        let actualOutput = data.output.trim();
+                        let expectedOutput = testcase.expectedOutput.trim();
+        
+                        if (actualOutput === expectedOutput) {
+                            passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
+                        } else {
+                            failedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
+                            failedCount++;
+                        }
+                        resolve();
+                    });
                 });
-            } else {
-                compiler.compilePython(envData, code, (data) => {
-                    if (data.error) {
-                        return res.send({ status: false, message: data.error });
-                    }
-                    res.send({ status: true , data: data });
-                });
-            }
-        }  else if (language === "cpp" || language === "c") {
+            });
+        } else if (language === "cpp" || language === "c") {
             let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
