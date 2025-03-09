@@ -1027,6 +1027,9 @@ app.post('/compile', async (req, res) => {
     console.log(input);
 
     if (action === "run") {
+
+        console.log("Language",language);
+        
         if (language === "python") {
             let envData = { OS: "linux" };
         
