@@ -1036,7 +1036,7 @@ app.post('/compile', async (req, res) => {
             if (isLikelyCCode) {
                 return res.status(400).send({
                     status: false,
-                    message: "The code appears to be written in C, but Python was selected. Please verify your language selection or update your code."
+                    message: "The code appears to be written in C, but Python was selected."
                 });
             }
         
@@ -1093,25 +1093,69 @@ app.post('/compile', async (req, res) => {
         }
         
         else if (language === "cpp" || language === "c") {
+            // Environment setup for C/C++ compilation
             let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
-
-            if (input) {
-                compiler.compileCPPWithInput(envData, code, input, (data) => {
-                    if (data.error) {
-                        return res.send({ status: false, message: "Compilation failed: " + data.error });
-                    }
-                    res.send({status:true , output: data.output || "No output" });
-                });
-            } else {
-                compiler.compileCPP(envData, code, (data) => {
-                    if (data.error) {
-                        return res.send({ status: false , message: "Compilation failed: " + data.error });
-                    }
-                    res.send({status:true,  output: data.output || "No output" });
+        
+            // Validate if the provided code looks like Python by checking for common Python patterns
+            const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
+            if (isLikelyPython) {
+                return res.status(400).send({
+                    status: false,
+                    message: "The code appears to be written in Python, but C/C++ was selected. Check your language."
                 });
             }
-        }
-    } else {
+        
+            try {
+                if (input) {
+                    compiler.compileCPPWithInput(envData, code, input, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: "Compilation failed: " + data.error
+                            });
+                        }
+                        res.send({
+                            status: true,
+                            output: data.output || "No output"
+                        });
+                    });
+                } else {
+                    compiler.compileCPP(envData, code, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: "Compilation failed: " + data.error
+                            });
+                        }
+                        res.send({
+                            status: true,
+                            output: data.output || "No output"
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error("Unexpected Error:", error);
+                res.status(500).send({
+                    status: false,
+                    message: "Internal Server Error"
+                });
+            }
+        }}
+         else {
         let failedCases = [];
         let passedCases = [];
         let failedCount = 0;
