@@ -1030,68 +1030,36 @@ app.post('/compile', async (req, res) => {
         if (language === "python") {
             let envData = { OS: "linux" };
         
-            // Validate if the provided code looks like C code by checking for common C patterns
-            const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
-        
-            if (isLikelyCCode) {
-                return res.status(400).send({
-                    status: false,
-                    message: "The code appears to be written in C, but Python was selected. Please verify your language selection or update your code."
-                });
-            }
-        
             try {
                 if (input) {
                     compiler.compilePythonWithInput(envData, code, input, (data) => {
                         if (!data) {
-                            return res.status(500).send({
-                                status: false,
-                                message: "No response from compiler"
-                            });
+                            return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
                         if (data.error) {
                             console.error("Compilation Error:", data.error);
-                            return res.status(400).send({
-                                status: false,
-                                message: data.error
-                            });
+                            return res.status(400).send({ status: false, message: data.error });
                         }
-                        res.send({
-                            status: true,
-                            output: data.output
-                        });
+                        res.send({ status: true, output: data.output });
                         console.log("Output:", data.output);
                     });
                 } else {
                     compiler.compilePython(envData, code, (data) => {
                         if (!data) {
-                            return res.status(500).send({
-                                status: false,
-                                message: "No response from compiler"
-                            });
+                            return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
                         if (data.error) {
                             console.error("Compilation Error:", data.error);
-                            return res.status(400).send({
-                                status: false,
-                                message: data.error
-                            });
+                            return res.status(400).send({ status: false, message: data.error });
                         }
-                        res.send({
-                            status: true,
-                            data: data
-                        });
+                        res.send({ status: true, data: data });
                     });
                 }
             } catch (error) {
                 console.error("Unexpected Error:", error);
-                res.status(500).send({
-                    status: false,
-                    message: "Internal Server Error"
-                });
+                res.status(500).send({ status: false, message: "Internal Server Error" });
             }
         }
-        
         else if (language === "cpp" || language === "c") {
             let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
 
