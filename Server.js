@@ -1017,7 +1017,25 @@ app.get("/getsubmissiontime", async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
-
+app.get('/randomnumber', async (req, res) => {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: "Email parameter is required" });
+    }
+  
+    try {
+      // Query the database for a participant with the provided email
+      const participant = await Participant.findOne({ email: email });
+      if (!participant) {
+        return res.status(404).json({ error: "Participant not found" });
+      }
+      // Return the random number from the participant's record
+      return res.json({ randomnum: participant.randomnum });
+    } catch (error) {
+      console.error("Error fetching participant:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 
 // POST endpoint for compiling and running code
 app.post('/compile', async (req, res) => {
