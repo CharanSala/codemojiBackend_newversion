@@ -1028,8 +1028,12 @@ app.post('/compile', async (req, res) => {
 
     if (action === "run") {
 
+        if (!language) {
+            return res.status(400).send({ status: false, message: "Please select the language" });
+        }
+    
         console.log("Language",language);
-        
+
         if (language === "python") {
             let envData = { OS: "linux" };
         
