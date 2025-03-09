@@ -1030,7 +1030,7 @@ app.get('/randomnumber', async (req, res) => {
         return res.status(404).json({ error: "Participant not found" });
       }
       // Return the random number from the participant's record
-      return res.json({ randomnum: participant.randomnum });
+      return res.json({ randomnum: participant.randomnumber });
     } catch (error) {
       console.error("Error fetching participant:", error);
       return res.status(500).json({ error: "Internal Server Error" });
