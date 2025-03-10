@@ -496,7 +496,7 @@ app.use(express.json());
 
 app.post("/participantverify", async (req, res) => {
     try {
-        console.log("🔍 Request Body:", req.body); // Debugging output
+        // console.log("🔍 Request Body:", req.body); // Debugging output
 
         if (!req.body) {
             return res.status(400).json({ message: "Invalid request! No request body received." });
@@ -1057,150 +1057,149 @@ app.get('/randomnumber', async (req, res) => {
 
 // POST endpoint for compiling and running code
 app.post('/compile', async (req, res) => {
-    const { language, code, action, input, testcases, email } = req.body;
+    const { language, code, action,input, testcases, email } = req.body;
     console.log(language);
     console.log(code);
     console.log(input);
-    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     if (action === "run") {
-      if (!language) {
-        return res.status(400).send({ status: false, message: "Please select the language" });
-      }
-    
-      console.log("Received request - Language:", language);
-      console.log("Code:", code);
-      console.log("Input:", input);
-    
-      // Create a unique temporary directory for this run.
-      const uniqueId = uuidv4();
-      console.log("Unique ID for this run:", uniqueId);
-    
-      const tempDir = path.join(path.dirname(new URL(import.meta.url).pathname), 'temp', uniqueId);
-      fs.mkdirSync(tempDir, { recursive: true });
-    
-      // Determine the file extension.
-      const sourceExtension = language === 'python' ? 'py' : 'cpp';
-      const sourceFile = path.join(tempDir, `${uniqueId}.${sourceExtension}`);
-      const inputFile = path.join(tempDir, `${uniqueId}_input.txt`);
-    
-      // Write the source code.
-      fs.writeFileSync(sourceFile, code);
-      // Write input file if provided.
-      if (input) {
-        fs.writeFileSync(inputFile, input);
-        const fileContent = fs.readFileSync(inputFile, 'utf8');
-        console.log("Verified Input File Content:", fileContent);
-      }
-    
-      // Cleanup function: removes the entire temporary directory synchronously.
-      function cleanUpFiles(dir) {
-        try {
-          fs.rmSync(dir, { recursive: true, force: true });
-          console.log("Cleaned up temporary directory:", dir);
-        } catch (err) {
-          console.error("Error cleaning up temporary directory:", err);
-        }
-      }
-    
-      // Use an async IIFE to allow use of await.
-      (async () => {
-        // Wait to ensure files are fully flushed.
-        await delay(1500);
-    
-        if (language === "python") {
-          const envData = { OS: "linux", fileId: uniqueId, sourceFile, inputFile };
-    
-          // Validate: if the code appears to be C.
-          const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
-          if (isLikelyCCode) {
-            cleanUpFiles(tempDir);
-            return res.status(400).send({ status: false, message: "The code appears to be C, but Python was selected." });
-          }
-    
-          try {
-            console.log("Calling Python Compiler...");
-            if (input) {
-              compiler.compilePythonWithInput(envData, code, input, (data) => {
-                console.log("Python Compilation Response:", data);
-                cleanUpFiles(tempDir);
-                if (!data) {
-                  return res.status(500).send({ status: false, message: "No response from compiler" });
-                }
-                if (data.error) {
-                  return res.status(400).send({ status: false, message: data.error });
-                }
-                console.log("Python Output:", data.output);
-                return res.send({ status: true, output: data.output });
-              });
-            } else {
-              compiler.compilePython(envData, code, (data) => {
-                console.log("Python Compilation Response (No Input):", data);
-                cleanUpFiles(tempDir);
-                if (!data) {
-                  return res.status(500).send({ status: false, message: "No response from compiler" });
-                }
-                if (data.error) {
-                  return res.status(400).send({ status: false, message: data.error });
-                }
-                console.log("Python Output:", data.output);
-                return res.send({ status: true, output: data.output });
-              });
-            }
-          } catch (error) {
-            console.error("Unexpected Error in Python Execution:", error);
-            cleanUpFiles(tempDir);
-            return res.status(500).send({ status: false, message: "Internal Server Error" });
-          }
-        } else if (language === "cpp" || language === "c") {
-          const envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 }, fileId: uniqueId, sourceFile, inputFile };
-    
-          // Validate: if the code appears to be Python.
-          const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
-          if (isLikelyPython) {
-            cleanUpFiles(tempDir);
-            return res.status(400).send({ status: false, message: "The code appears to be Python, but C/C++ was selected." });
-          }
-    
-          try {
-            console.log("Calling C/C++ Compiler...");
-            if (input) {
-              compiler.compileCPPWithInput(envData, code, input, (data) => {
-                console.log("C/C++ Compilation Response:", data);
-                cleanUpFiles(tempDir);
-                if (!data) {
-                  return res.status(500).send({ status: false, message: "No response from compiler" });
-                }
-                if (data.error) {
-                  return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
-                }
-                console.log("C/C++ Output:", data.output);
-                return res.send({ status: true, output: data.output || "No output" });
-              });
-            } else {
-              compiler.compileCPP(envData, code, (data) => {
-                console.log("C/C++ Compilation Response (No Input):", data);
-                cleanUpFiles(tempDir);
-                if (!data) {
-                  return res.status(500).send({ status: false, message: "No response from compiler" });
-                }
-                if (data.error) {
-                  return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
-                }
-                console.log("C/C++ Output:", data.output);
-                return res.send({ status: true, output: data.output || "No output" });
-              });
-            }
-          } catch (error) {
-            console.error("Unexpected Error in C/C++ Execution:", error);
-            cleanUpFiles(tempDir);
-            return res.status(500).send({ status: false, message: "Internal Server Error" });
-          }
-        }
-      })();
-    }
 
-    else {
+        if (!language) {
+            return res.status(400).send({ status: false, message: "Please select the language" });
+        }
+    
+        console.log("Language",language);
+
+        if (language === "python") {
+            let envData = { OS: "linux" };
+        
+            // Validate if the provided code looks like C code by checking for common C patterns
+            const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
+        
+            if (isLikelyCCode) {
+                return res.status(400).send({
+                    status: false,
+                    message: "The code appears to be written in C, but Python was selected."
+                });
+            }
+        
+            try {
+                if (input) {
+                    compiler.compilePythonWithInput(envData, code, input, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: data.error
+                            });
+                        }
+                        res.send({
+                            status: true,
+                            output: data.output
+                        });
+                        console.log("Output:", data.output);
+                    });
+                } else {
+                    compiler.compilePython(envData, code, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: data.error
+                            });
+                        }
+                        res.send({
+                            status: true,
+                            data: data
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error("Unexpected Error:", error);
+                res.status(500).send({
+                    status: false,
+                    message: "Internal Server Error"
+                });
+            }
+        }
+        
+        else if (language === "cpp" || language === "c") {
+            // Environment setup for C/C++ compilation
+            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
+        
+            // Validate if the provided code looks like Python by checking for common Python patterns
+            const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
+            if (isLikelyPython) {
+                return res.status(400).send({
+                    status: false,
+                    message: "The code appears to be written in Python, but C/C++ was selected. Check your language."
+                });
+            }
+        
+            try {
+                if (input) {
+                    compiler.compileCPPWithInput(envData, code, input, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: "Compilation failed: " + data.error
+                            });
+                        }
+                        console.log("Output: "+data.output);
+                        res.send({
+                            status: true,
+                            output: data.output || "No output"
+                        });
+                    });
+                } else {
+                    compiler.compileCPP(envData, code, (data) => {
+                        if (!data) {
+                            return res.status(500).send({
+                                status: false,
+                                message: "No response from compiler"
+                            });
+                        }
+                        if (data.error) {
+                            console.error("Compilation Error:", data.error);
+                            return res.status(400).send({
+                                status: false,
+                                message: "Compilation failed: " + data.error
+                            });
+                        }
+                        res.send({
+                            status: true,
+                            output: data.output || "No output"
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error("Unexpected Error:", error);
+                res.status(500).send({
+                    status: false,
+                    message: "Internal Server Error"
+                });
+            }
+        }}
+         else {
         let failedCases = [];
         let passedCases = [];
         let failedCount = 0;
@@ -1208,19 +1207,19 @@ app.post('/compile', async (req, res) => {
 
         if (language === "python") {
             let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
-
+        
             promises = testcases.map((testcase) => {
                 return new Promise((resolve) => {
                     compiler.compilePythonWithInput(envData, code, testcase.input, (data) => {
                         if (data.error) {
                             return res.send({ status: "error", message: "Execution failed: " + data.error });
                         }
-
-                        let compoutput = data.output.toString();
+        
+                        let compoutput=data.output.toString();
 
                         let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
-
+        
                         if (actualOutput === expectedOutput) {
                             passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
                         } else {
@@ -1240,13 +1239,13 @@ app.post('/compile', async (req, res) => {
                         if (data.error) {
                             return res.send({ status: "error", message: "Compilation failed: " + data.error });
                         }
-                        let compoutput = data.output.toString();
+                        let compoutput=data.output.toString();
 
                         let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
 
-                        console.log("Actualoutput", actualOutput);
-                        console.log("expected output", expectedOutput);
+                        console.log("Actualoutput",actualOutput);
+                        console.log("expected output",expectedOutput);
 
                         if (actualOutput === expectedOutput) {
                             passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
@@ -1266,42 +1265,42 @@ app.post('/compile', async (req, res) => {
         if (failedCases.length === 0) {
             console.log("all are passed")
             console.log("pass", passedCases);
-
+           
             console.log("Myemail", currentUserEmail);
             const participant = await Participant.findOne({ email: email });
 
-            console.log(code);
+           console.log(code);
             participant.submittedCode = code;
             await participant.save();
 
-            participant.points = 100;
+            participant.points=100;
             await participant.save();
 
 
-            participant.language = language;
+            participant.language = language; 
             await participant.save();
 
 
 
-            const time = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Asia/Kolkata',
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+            const time = new Intl.DateTimeFormat('en-GB', { 
+                timeZone: 'Asia/Kolkata', 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
             }).format(new Date());
 
-
-
+        
+            
             participant.round1submissiontime = time; // Store time as a string
             await participant.save();
 
-
+        
             return res.json({
                 status: "success",
                 message: "✅ All test cases passed!",
                 passedTestCases: passedCases,
-                subtime: time,
+                subtime:time,
             });
 
         } else {
@@ -1315,7 +1314,6 @@ app.post('/compile', async (req, res) => {
         }
     }
 });
-
 
 const port = process.env.PORT || 5000;
 // Start the server
