@@ -334,10 +334,10 @@ app.get("/leaderboard", async (req, res) => {
         const sortedLeaderboard = participants
             .filter(participant => participant.points > 0)
             .map(participant => {
-                // Convert submission times to seconds for sorting; if not submitted, default to Infinity
-                const round1Time = participant.round1submissiontime ? timeToSeconds(participant.round1submissiontime) : Infinity;
-                const round2Time = participant.round2submissiontime ? timeToSeconds(participant.round2submissiontime) : Infinity;
-                const round3Time = participant.round3submissiontime ? timeToSeconds(participant.round3submissiontime) : Infinity;
+                // Compute seconds for sorting purposes
+                const round1Seconds = participant.round1submissiontime ? timeToSeconds(participant.round1submissiontime) : Infinity;
+                const round2Seconds = participant.round2submissiontime ? timeToSeconds(participant.round2submissiontime) : Infinity;
+                const round3Seconds = participant.round3submissiontime ? timeToSeconds(participant.round3submissiontime) : Infinity;
 
                 // Determine the latest round submitted (round3 > round2 > round1)
                 let latestRound = 0;
@@ -353,9 +353,14 @@ app.get("/leaderboard", async (req, res) => {
                     email: participant.email,
                     points: participant.points || 0,
                     latestRound,
-                    round1Time,
-                    round2Time,
-                    round3Time
+                    // Include seconds properties for internal sorting
+                    round1Seconds,
+                    round2Seconds,
+                    round3Seconds,
+                    // Pass the original HH:MM:SS strings to the frontend
+                    round1Time: participant.round1submissiontime || "N/A",
+                    round2Time: participant.round2submissiontime || "N/A",
+                    round3Time: participant.round3submissiontime || "N/A"
                 };
             })
             .sort((a, b) => {
@@ -370,15 +375,17 @@ app.get("/leaderboard", async (req, res) => {
                 // If both points and rounds are equal, sort by the submission time of the latest round (faster submission wins)
                 switch (a.latestRound) {
                     case 3:
-                        return a.round3Time - b.round3Time;
+                        return a.round3Seconds - b.round3Seconds;
                     case 2:
-                        return a.round2Time - b.round2Time;
+                        return a.round2Seconds - b.round2Seconds;
                     case 1:
-                        return a.round1Time - b.round1Time;
+                        return a.round1Seconds - b.round1Seconds;
                     default:
                         return 0;
                 }
-            });
+            })
+            // Remove the numeric seconds properties before sending the response
+            .map(({ round1Seconds, round2Seconds, round3Seconds, ...rest }) => rest);
 
         res.json(sortedLeaderboard);
     } catch (error) {
@@ -1079,7 +1086,7 @@ app.post('/compile', async (req, res) => {
         console.log("Language", language);
 
         if (language === "python") {
-            let envData = { OS: "linux" };
+            let envData = { OS: "windows" };
 
             // Validate if the provided code looks like C code by checking for common C patterns
             const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
@@ -1145,7 +1152,7 @@ app.post('/compile', async (req, res) => {
 
         else if (language === "cpp" || language === "c") {
             // Environment setup for C/C++ compilation
-            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
+            let envData = { OS: "windows", cmd: "g++", options: { timeout: 30000 } };
 
             // Validate if the provided code looks like Python by checking for common Python patterns
             const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
@@ -1214,7 +1221,7 @@ app.post('/compile', async (req, res) => {
         let promises = [];
 
         if (language === "python") {
-            let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
+            let envData = { OS: "windows", cmd: "python3", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
                 return promiseWithTimeout(new Promise((resolve) => {
@@ -1241,7 +1248,7 @@ app.post('/compile', async (req, res) => {
                 }), 30000);
             });
         } else if (language === "cpp" || language === "c") {
-            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
+            let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
                 return promiseWithTimeout(new Promise((resolve) => {
