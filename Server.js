@@ -293,7 +293,8 @@ app.post("/saveCode", async (req, res) => {
 
 app.post("/connect", async (req, res) => {
     try {
-      const { email, name } = req.body;
+      const { emails, name } = req.body;
+      const email= emails[0];
   
       if (!email || !name) {
         return res.status(400).json({ error: "Email and Name are required" });
@@ -1025,7 +1026,7 @@ app.get('/randomnumber', async (req, res) => {
   
     try {
       // Query the database for a participant with the provided email
-      const participant = await Participant.findOne({ email: email });
+      const participant = await Participant.findOne({ email });
       if (!participant) {
         return res.status(404).json({ error: "Participant not found" });
       }
