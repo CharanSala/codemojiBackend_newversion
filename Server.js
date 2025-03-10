@@ -1059,7 +1059,7 @@ app.get('/randomnumber', async (req, res) => {
 app.post('/compile', async (req, res) => {
     const { language, code, action,input, testcases, email } = req.body;
     console.log(language);
-    console.log(code);
+    // console.log(code);
     console.log(input);
 
     if (action === "run") {
