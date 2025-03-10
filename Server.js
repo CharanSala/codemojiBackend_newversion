@@ -26,6 +26,9 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 let currentUserEmail = "";
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
 
 
 
@@ -1044,6 +1047,25 @@ app.post('/compile', async (req, res) => {
     console.log(language);
     console.log(code);
     console.log(input);
+
+    function cleanUpFiles(source, input) {
+        fs.unlink(source, (err) => {
+            if (err) {
+                console.error("Error cleaning up source file:", err);
+            } else {
+                console.log("Source file cleaned up:", source);
+            }
+        });
+        if (input) {
+            fs.unlink(input, (err) => {
+                if (err) {
+                    console.error("Error cleaning up input file:", err);
+                } else {
+                    console.log("Input file cleaned up:", input);
+                }
+            });
+        }
+    }
     if (action === "run") {
         if (!language) {
             return res.status(400).send({ status: false, message: "Please select the language" });
@@ -1053,8 +1075,29 @@ app.post('/compile', async (req, res) => {
         console.log("Code:", code);
         console.log("Input:", input);
     
+        // Generate a unique identifier for this run
+        const uniqueId = uuidv4();
+        console.log("Unique ID for this run:", uniqueId);
+    
+        // Set a temporary directory for files
+        const tempDir = path.join(__dirname, 'temp');
+        // Ensure the temp directory exists
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
+        }
+        
+        // Create unique filenames for the source and input files
+        const sourceFile = path.join(tempDir, `${uniqueId}.${language === 'python' ? 'py' : 'cpp'}`);
+        const inputFile = path.join(tempDir, `${uniqueId}_input.txt`);
+    
+        // Optionally, write the code and input to these files if needed by your compiler wrapper
+        fs.writeFileSync(sourceFile, code);
+        if (input) {
+            fs.writeFileSync(inputFile, input);
+        }
+        
         if (language === "python") {
-            let envData = { OS: "linux" };
+            let envData = { OS: "linux", fileId: uniqueId, sourceFile, inputFile };
     
             // Detect if the code is mistakenly C instead of Python
             const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
@@ -1067,6 +1110,7 @@ app.post('/compile', async (req, res) => {
                 if (input) {
                     compiler.compilePythonWithInput(envData, code, input, (data) => {
                         console.log("Python Compilation Response:", data);
+                        cleanUpFiles(sourceFile, inputFile); // clean up temp files after execution
                         if (!data) {
                             return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
@@ -1080,6 +1124,7 @@ app.post('/compile', async (req, res) => {
                 } else {
                     compiler.compilePython(envData, code, (data) => {
                         console.log("Python Compilation Response (No Input):", data);
+                        cleanUpFiles(sourceFile); // clean up temp files after execution
                         if (!data) {
                             return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
@@ -1095,10 +1140,8 @@ app.post('/compile', async (req, res) => {
                 console.error("Unexpected Error in Python Execution:", error);
                 res.status(500).send({ status: false, message: "Internal Server Error" });
             }
-        } 
-    
-        else if (language === "cpp" || language === "c") {
-            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
+        } else if (language === "cpp" || language === "c") {
+            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 }, fileId: uniqueId, sourceFile, inputFile };
     
             // Detect if the code is mistakenly Python instead of C/C++
             const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
@@ -1111,6 +1154,7 @@ app.post('/compile', async (req, res) => {
                 if (input) {
                     compiler.compileCPPWithInput(envData, code, input, (data) => {
                         console.log("C/C++ Compilation Response:", data);
+                        cleanUpFiles(sourceFile, inputFile);
                         if (!data) {
                             return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
@@ -1124,6 +1168,7 @@ app.post('/compile', async (req, res) => {
                 } else {
                     compiler.compileCPP(envData, code, (data) => {
                         console.log("C/C++ Compilation Response (No Input):", data);
+                        cleanUpFiles(sourceFile);
                         if (!data) {
                             return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
@@ -1141,6 +1186,10 @@ app.post('/compile', async (req, res) => {
             }
         }
     }
+    
+    // Utility function to clean up temporary files
+    
+    
     
          else {
         let failedCases = [];
