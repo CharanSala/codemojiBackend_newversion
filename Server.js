@@ -230,17 +230,17 @@ app.get("/get-level3timer", async (req, res) => {
 app.get("/getPoints1", async (req, res) => {
     try {
         const { email } = req.query; // Get email from query params
-        console.log(email)
+    
         if (!email) {
             return res.status(400).json({ error: "Email is required" });
         }
 
         const user = await Participant.findOne({ email });
-        console.log(user);
+        // console.log(user);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        console.log(user.points);
+        // console.log(user.points);
         res.json({ points: user.points });
 
     } catch (error) {
