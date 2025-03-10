@@ -1059,7 +1059,6 @@ app.get('/randomnumber', async (req, res) => {
 app.post('/compile', async (req, res) => {
     const { language, code, action,input, testcases, email } = req.body;
     console.log(language);
-    // console.log(code);
     console.log(input);
 
     if (action === "run") {
@@ -1200,120 +1199,121 @@ app.post('/compile', async (req, res) => {
             }
         }}
          else {
-        let failedCases = [];
-        let passedCases = [];
-        let failedCount = 0;
-        let promises = [];
-
-        if (language === "python") {
-            let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
-        
-            promises = testcases.map((testcase) => {
-                return new Promise((resolve) => {
-                    compiler.compilePythonWithInput(envData, code, testcase.input, (data) => {
-                        if (data.error) {
-                            return res.send({ status: "error", message: "Execution failed: " + data.error });
-                        }
-        
-                        let compoutput=data.output.toString();
-
-                        let actualOutput = compoutput.trim();
-                        let expectedOutput = testcase.expectedOutput.trim();
-        
-                        if (actualOutput === expectedOutput) {
-                            passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                        } else {
-                            failedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                            failedCount++;
-                        }
-                        resolve();
+            try {
+                let failedCases = [];
+                let passedCases = [];
+                let hasCompilationError = false;
+    
+                if (!['python', 'cpp', 'c'].includes(language)) {
+                    return res.status(400).json({
+                        status: false,
+                        message: "Unsupported language for testing"
                     });
-                });
-            });
-        } else if (language === "cpp" || language === "c") {
-            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
-
-            promises = testcases.map((testcase) => {
-                return new Promise((resolve) => {
-                    compiler.compileCPPWithInput(envData, code, testcase.input, (data) => {
-                        if (data.error) {
-                            return res.send({ status: "error", message: "Compilation failed: " + data.error });
+                }
+    
+                const processTestCase = (testcase) => {
+                    return new Promise((resolve) => {
+                        const handler = (data) => {
+                            if (data.error) {
+                                failedCases.push({
+                                    input: testcase.input,
+                                    expected: testcase.expectedOutput,
+                                    got: data.error,
+                                    error: true
+                                });
+                                hasCompilationError = true;
+                                return resolve();
+                            }
+    
+                            const actualOutput = data.output.toString().trim();
+                            const expectedOutput = testcase.expectedOutput.trim();
+    
+                            if (actualOutput === expectedOutput) {
+                                passedCases.push({
+                                    input: testcase.input,
+                                    expected: expectedOutput,
+                                    got: actualOutput
+                                });
+                            } else {
+                                failedCases.push({
+                                    input: testcase.input,
+                                    expected: expectedOutput,
+                                    got: actualOutput
+                                });
+                            }
+                            resolve();
+                        };
+    
+                        if (language === "python") {
+                            const envData = { OS: "linux" };
+                            compiler.compilePythonWithInput(envData, code, testcase.input, handler);
+                        } else { // C/C++
+                            const envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
+                            compiler.compileCPPWithInput(envData, code, testcase.input, handler);
                         }
-                        let compoutput=data.output.toString();
-
-                        let actualOutput = compoutput.trim();
-                        let expectedOutput = testcase.expectedOutput.trim();
-
-                        console.log("Actualoutput",actualOutput);
-                        console.log("expected output",expectedOutput);
-
-                        if (actualOutput === expectedOutput) {
-                            passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                        } else {
-                            failedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
-                            failedCount++;
-                        }
-                        resolve();
                     });
+                };
+    
+                await Promise.all(testcases.map(processTestCase));
+    
+                // Handle early compilation errors
+                if (hasCompilationError) {
+                    return res.json({
+                        status: "error",
+                        message: "Compilation failed",
+                        failedTestCases: failedCases
+                    });
+                }
+    
+                if (failedCases.length === 0) {
+                    const participant = await Participant.findOne({ email });
+                    if (!participant) {
+                        return res.status(404).json({
+                            status: false,
+                            message: "Participant not found"
+                        });
+                    }
+    
+                    const submissionTime = new Intl.DateTimeFormat('en-GB', { 
+                        timeZone: 'Asia/Kolkata',
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }).format(new Date());
+    
+                    // Update participant in a single operation
+                    participant.submittedCode = code;
+                    participant.points = 100;
+                    participant.language = language;
+                    participant.round1submissiontime = submissionTime;
+                    await participant.save();
+    
+                    return res.json({
+                        status: "success",
+                        message: "✅ All test cases passed!",
+                        passedTestCases: passedCases,
+                        submissionTime: submissionTime
+                    });
+                } else {
+                    return res.json({
+                        status: "failed",
+                        message: `${failedCases.length} test cases failed`,
+                        passedCount: passedCases.length,
+                        failedCount: failedCases.length,
+                        passedTestCases: passedCases,
+                        failedTestCases: failedCases
+                    });
+                }
+            } catch (error) {
+                console.error("Unexpected Error:", error);
+                res.status(500).json({
+                    status: false,
+                    message: "Internal Server Error"
                 });
-            });
+            }
         }
-
-
-        await Promise.all(promises);
-
-        if (failedCases.length === 0) {
-            console.log("all are passed")
-            console.log("pass", passedCases);
-           
-            console.log("Myemail", currentUserEmail);
-            const participant = await Participant.findOne({ email: email });
-
-           console.log(code);
-            participant.submittedCode = code;
-            await participant.save();
-
-            participant.points=100;
-            await participant.save();
-
-
-            participant.language = language; 
-            await participant.save();
-
-
-
-            const time = new Intl.DateTimeFormat('en-GB', { 
-                timeZone: 'Asia/Kolkata', 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            }).format(new Date());
-
-        
-            
-            participant.round1submissiontime = time; // Store time as a string
-            await participant.save();
-
-        
-            return res.json({
-                status: "success",
-                message: "✅ All test cases passed!",
-                passedTestCases: passedCases,
-                subtime:time,
-            });
-
-        } else {
-            console.log("all are transfered");
-            res.send({
-                status: "failed",
-                failedCount: failedCount,
-                passedTestCases: passedCases,
-                failedTestCases: failedCases,
-            });
-        }
-    }
-});
+    });
 
 const port = process.env.PORT || 5000;
 // Start the server
