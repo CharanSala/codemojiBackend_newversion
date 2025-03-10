@@ -1238,7 +1238,7 @@ app.post('/compile', async (req, res) => {
                         }
                         resolve();
                     });
-                }), 10000);
+                }), 30000);
             });
         } else if (language === "cpp" || language === "c") {
             let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
@@ -1267,7 +1267,7 @@ app.post('/compile', async (req, res) => {
                         }
                         resolve();
                     });
-                }), 10000);
+                }), 30000);
             });
         }
 
