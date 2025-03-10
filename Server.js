@@ -1186,8 +1186,9 @@ app.post('/compile', async (req, res) => {
             }
         })();
     }
-    // Helper delay function using promises.
+
     else {
+        // Helper delay function using promises.
         const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         let failedCases = [];
@@ -1308,17 +1309,19 @@ app.post('/compile', async (req, res) => {
             });
         }
     }
+});
 
-    const port = process.env.PORT || 5000;
-    // Start the server
-    app.listen(port, () => {
-        console.log(`Server is running on ${port}`);
-    });
 
-    // Clean up temporary files on exit
-    process.on('SIGINT', () => {
-        compilex.flush(function () {
-            console.log("Temporary files cleaned up.");
-            process.exit();
-        });
+const port = process.env.PORT || 5000;
+// Start the server
+app.listen(port, () => {
+    console.log(`Server is running on ${port}`);
+});
+
+// Clean up temporary files on exit
+process.on('SIGINT', () => {
+    compilex.flush(function () {
+        console.log("Temporary files cleaned up.");
+        process.exit();
     });
+});
