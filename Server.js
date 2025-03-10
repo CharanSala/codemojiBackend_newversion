@@ -1197,7 +1197,9 @@ app.post('/compile', async (req, res) => {
                             return res.send({ status: "error", message: "Execution failed: " + data.error });
                         }
         
-                        let actualOutput = data.output.trim();
+                        let compoutput=data.output.toString();
+
+                        let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
         
                         if (actualOutput === expectedOutput) {
@@ -1219,8 +1221,9 @@ app.post('/compile', async (req, res) => {
                         if (data.error) {
                             return res.send({ status: "error", message: "Compilation failed: " + data.error });
                         }
+                        let compoutput=data.output.toString();
 
-                        let actualOutput = data.output.trim();
+                        let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
 
                         if (actualOutput === expectedOutput) {
