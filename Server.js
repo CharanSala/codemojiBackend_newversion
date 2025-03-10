@@ -8,6 +8,9 @@ import crypto, { randomBytes } from "crypto";
 import connectDB from './db.js';
 import moment from 'moment-timezone';
 import dotenv from "dotenv";
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
 
 
 dotenv.config();
@@ -118,10 +121,10 @@ app.post("/update-level1submissiontime", async (req, res) => {
             return res.status(404).json({ error: "Timer not found" });
         }
 
-        participant.round2submissiontime=time;
+        participant.round2submissiontime = time;
         await participant.save();
-        
-        res.status(200).json({ msg: "saved"});
+
+        res.status(200).json({ msg: "saved" });
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch time" });
     }
@@ -138,10 +141,10 @@ app.post("/update-level2submissiontime", async (req, res) => {
             return res.status(404).json({ error: "Timer not found" });
         }
 
-        participant.round1submissiontime=time;
+        participant.round1submissiontime = time;
         await participant.save();
-        
-        res.status(200).json({ msg: "saved"});
+
+        res.status(200).json({ msg: "saved" });
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch time" });
     }
@@ -159,10 +162,10 @@ app.post("/update-level3submissiontime", async (req, res) => {
             return res.status(404).json({ error: "Timer not found" });
         }
 
-        participant.round3submissiontime=time;
+        participant.round3submissiontime = time;
         await participant.save();
-        
-        res.status(200).json({ msg: "saved"});
+
+        res.status(200).json({ msg: "saved" });
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch time" });
     }
@@ -230,7 +233,7 @@ app.get("/get-level3timer", async (req, res) => {
 app.get("/getPoints1", async (req, res) => {
     try {
         const { email } = req.query; // Get email from query params
-    
+
         if (!email) {
             return res.status(400).json({ error: "Email is required" });
         }
@@ -245,7 +248,7 @@ app.get("/getPoints1", async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching points:", error);
-        res.status(500).json({ error: "Server error" }); 
+        res.status(500).json({ error: "Server error" });
     }
 });
 app.post("/register", async (req, res) => {
@@ -256,10 +259,10 @@ app.post("/register", async (req, res) => {
         if (!name || !email) {
             return res.status(400).json({ error: "Name and Email are required!" });
         }
-      
-        const newParticipant = new Participant({ name, email }); 
+
+        const newParticipant = new Participant({ name, email });
         await newParticipant.save();
-        
+
         res.status(201).json({ message: "✅ Registration Successful", participant: newParticipant });
     } catch (error) {
         console.error("❌ Error inserting participant:", error);
@@ -281,10 +284,10 @@ app.post("/saveCode", async (req, res) => {
         if (!participant) {
             return res.status(404).send({ message: 'Participant not found' });
         }
-       participant.submittedCode=code;
-       await  participant.save(); 
+        participant.submittedCode = code;
+        await participant.save();
 
-       
+
         res.status(200).json({ message: "Code saved successfully" });
     } catch (error) {
         res.status(500).json({ error: "Failed to save code" });
@@ -293,30 +296,30 @@ app.post("/saveCode", async (req, res) => {
 
 app.post("/connect", async (req, res) => {
     try {
-      const { emails, name } = req.body;
-      const email= emails[0];
-  
-      if (!email || !name) {
-        return res.status(400).json({ error: "Email and Name are required" });
-      }
-  
-      // Check if participant already exists
-      const existingParticipant = await Participant.findOne({ email });
-  
-      if (existingParticipant) {
-        return res.status(400).json({ error: "Participant already exists" });
-      }
-  
-      // Create a new participant
-      const newParticipant = new Participant({ email, name, points: 0 });
-  
-      // Save to database
-      await newParticipant.save();
-  
-      res.status(201).json({ message: "Participant added successfully", participant: newParticipant });
+        const { emails, name } = req.body;
+        const email = emails[0];
+
+        if (!email || !name) {
+            return res.status(400).json({ error: "Email and Name are required" });
+        }
+
+        // Check if participant already exists
+        const existingParticipant = await Participant.findOne({ email });
+
+        if (existingParticipant) {
+            return res.status(400).json({ error: "Participant already exists" });
+        }
+
+        // Create a new participant
+        const newParticipant = new Participant({ email, name, points: 0 });
+
+        // Save to database
+        await newParticipant.save();
+
+        res.status(201).json({ message: "Participant added successfully", participant: newParticipant });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
@@ -329,7 +332,7 @@ app.get("/leaderboard", async (req, res) => {
         );
 
         const sortedLeaderboard = participants
-        .filter(participant => participant.points > 0) 
+            .filter(participant => participant.points > 0)
             .map(participant => {
                 // Convert submission times to seconds for sorting
                 const round1Time = timeToSeconds(participant.round1submissiontime);
@@ -373,13 +376,13 @@ app.get("/leaderboard", async (req, res) => {
 });
 
 // Helper function to convert HH:MM:SS to total seconds
-  function timeToSeconds(time) {
+function timeToSeconds(time) {
     if (!time) return 0;
     const [hh, mm, ss] = time.split(":").map(Number);
     return hh * 3600 + mm * 60 + ss;
-  }
-  
-  
+}
+
+
 
 app.post('/getSubmittedCode', async (req, res) => {
     try {
@@ -406,13 +409,13 @@ app.get('/getround2submissiontime', async (req, res) => {
             return res.status(400).json({ message: "Email is required" });
         }
 
-    
+
         const participant = await Participant.findOne({ email: email });
 
         if (!participant) {
             return res.status(404).send({ message: 'Participant not found' });
         }
-       
+
 
         if (!participant) {
             return res.status(404).json({ message: 'Participant not found' });
@@ -439,7 +442,7 @@ app.get('/getround3submissiontime', async (req, res) => {
         if (!participant) {
             return res.status(404).send({ message: 'Participant not found' });
         }
-       
+
 
         if (!participant) {
             return res.status(404).json({ message: 'Participant not found' });
@@ -504,15 +507,15 @@ app.post("/participantverify", async (req, res) => {
             return res.status(401).json({ message: "Incorrect password!" });
         }
 
-        if (participant.randomnumber===0) {
+        if (participant.randomnumber === 0) {
             participant.randomnumber = Math.floor(Math.random() * 5) + 1;
             await participant.save();
         }
-       
+
 
 
         console.log("✅ Participant Verified:", participant.email);
-       
+
 
         res.json({
             message: "Login successful!",
@@ -526,81 +529,81 @@ app.post("/participantverify", async (req, res) => {
 });
 app.post("/check-round2", async (req, res) => {
     try {
-      const { email } = req.body;
-  
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-      }
-  
-      const user = await Participant.findOne({ email });
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      user.round2submissiontime = "0";
-      await user.save();
-  
-      return res.status(200).json({ message: "Round 2 submission time reset successfully" });
-  
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Server error" });
-    }
-  });
+        const { email } = req.body;
 
-  app.post("/check-round1", async (req, res) => {
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await Participant.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.round2submissiontime = "0";
+        await user.save();
+
+        return res.status(200).json({ message: "Round 2 submission time reset successfully" });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server error" });
+    }
+});
+
+app.post("/check-round1", async (req, res) => {
     try {
-      const { email } = req.body;
-  
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-      }
-  
-      const user = await Participant.findOne({ email });
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      user.round1submissiontime = "0";
-      await user.save();
+        const { email } = req.body;
 
-      return res.status(200).json({ message: "Round 2 submission time reset successfully" });
-  
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await Participant.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.round1submissiontime = "0";
+        await user.save();
+
+        return res.status(200).json({ message: "Round 2 submission time reset successfully" });
+
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Server error" });
+        console.error(error);
+        return res.status(500).json({ message: "Server error" });
     }
-  });
-  
-  app.post("/check-round3", async (req, res) => {
+});
+
+app.post("/check-round3", async (req, res) => {
     try {
-      const { email } = req.body;
-  
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-      }
-  
-      const user = await Participant.findOne({ email });
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      user.round3submissiontime = "0";
-      await user.save();
+        const { email } = req.body;
 
-      return res.status(200).json({ message: "Round 3 submission time reset successfully" });
-  
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await Participant.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.round3submissiontime = "0";
+        await user.save();
+
+        return res.status(200).json({ message: "Round 3 submission time reset successfully" });
+
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Server error" });
+        console.error(error);
+        return res.status(500).json({ message: "Server error" });
     }
-  });
-  
+});
 
-  
+
+
 app.get("/getParticipant", async (req, res) => {
     try {
         const email = req.query.email;
@@ -624,10 +627,10 @@ app.get("/getParticipant", async (req, res) => {
 
 
 app.post('/store-submission-time', async (req, res) => {
-    const {submissionTime } = req.body;
+    const { submissionTime } = req.body;
 
-    try{
-       const participant = await Participant.findOne({ email: currentUserEmail });
+    try {
+        const participant = await Participant.findOne({ email: currentUserEmail });
 
         if (!participant) {
             return res.status(404).send({ message: 'Participant not found' });
@@ -670,26 +673,26 @@ app.post('/verify1', (req, res) => {
     const isCorrect = userValues.every((value, index) => value === correctValues[index]);
 
     if (isCorrect) {
-        
-         const sub = new Intl.DateTimeFormat('en-GB', { 
-            timeZone: 'Asia/Kolkata', 
-            hour12: false, 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
+
+        const sub = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Kolkata',
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
         }).format(new Date());
-        
+
         console.log(sub);
-        
+
         console.log(sub);
-        
-        
+
+
         return res.json({
             message: '✅ Success! Your output is correct!',
             submissionTime: sub,
             status: true,
-        }); 
-       
+        });
+
 
     } else {
         return res.json({ message: '❌ Some values are incorrect. Please try again!', status: false });
@@ -697,7 +700,7 @@ app.post('/verify1', (req, res) => {
 });
 
 app.post('/verify', async (req, res) => {
-    const { inputValues, result, email } = req.body; 
+    const { inputValues, result, email } = req.body;
 
     if (!Array.isArray(inputValues) || !Array.isArray(result)) {
         return res.status(400).json({ message: 'Invalid input format' });
@@ -718,43 +721,44 @@ app.post('/verify', async (req, res) => {
     const isCorrect = userValues.every((value, index) => value === correctValues[index]);
 
     if (isCorrect) {
-        const sub = new Intl.DateTimeFormat('en-GB', { 
-            timeZone: 'Asia/Kolkata', 
-            hour12: false, 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
+        const sub = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Kolkata',
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
         }).format(new Date());
-        
+
         console.log(sub);
-        
-    try {
-        // Find participant by ID and update their record with the submitted code
-        const participant = await Participant.findOne({ email: email });
 
-        if (!participant) {
-            return res.status(404).send({ message: 'Participant not found' });
+        try {
+            // Find participant by ID and update their record with the submitted code
+            const participant = await Participant.findOne({ email: email });
+
+            if (!participant) {
+                return res.status(404).send({ message: 'Participant not found' });
+            }
+
+            // Save the code in the 'submittedCode' field of the participant
+            participant.round2submissiontime = sub;
+
+            await participant.save();
+
+            participant.points = 50;
+            await participant.save();
+
+
+            res.status(200).send({
+
+                message: '✅ Success! Your output is correct!',
+                submissionTime: sub,
+                status: true,
+            });
+
+        } catch (error) {
+            res.status(500).send({ message: 'Error saving code to the database', error: error.message });
+
         }
-
-        // Save the code in the 'submittedCode' field of the participant
-        participant.round2submissiontime = sub;
-        
-        await participant.save();
-
-        participant.points = 50; 
-        await participant.save();
-        
-
-        res.status(200).send({ 
-
-            message: '✅ Success! Your output is correct!',
-            submissionTime: sub,
-            status: true,});
-
-    } catch (error) {
-        res.status(500).send({ message: 'Error saving code to the database', error: error.message });
-
-    }     
 
     } else {
         return res.json({ message: '❌ Some values are incorrect. Please try again!', status: false });
@@ -763,12 +767,12 @@ app.post('/verify', async (req, res) => {
 });
 
 app.post("/updatepoints", async (req, res) => {
-   
-    const { points,email } = req.body; // Reduce 10 points for hint
-    
+
+    const { points, email } = req.body; // Reduce 10 points for hint
+
     try {
         // Find participant by email
-        const participant = await Participant.findOne({ email: email }); 
+        const participant = await Participant.findOne({ email: email });
 
         if (!participant) {
             return res.status(404).json({ message: "Participant not found" });
@@ -780,11 +784,11 @@ app.post("/updatepoints", async (req, res) => {
         // Update points in the database
         participant.points = updatedPoints;
         await participant.save();
-        
-        participant.hint1=false;
+
+        participant.hint1 = false;
         await participant.save();
 
-        participant.hint2=true;
+        participant.hint2 = true;
         await participant.save();
 
         return res.status(200).json({ points: participant.points });
@@ -796,12 +800,12 @@ app.post("/updatepoints", async (req, res) => {
 });
 
 app.post("/updatepoints1", async (req, res) => {
-   
-    const { points,email } = req.body; // Reduce 10 points for hint
-    
+
+    const { points, email } = req.body; // Reduce 10 points for hint
+
     try {
         // Find participant by email
-        const participant = await Participant.findOne({ email: email }); 
+        const participant = await Participant.findOne({ email: email });
 
         if (!participant) {
             return res.status(404).json({ message: "Participant not found" });
@@ -813,11 +817,11 @@ app.post("/updatepoints1", async (req, res) => {
         // Update points in the database
         participant.points = updatedPoints;
         await participant.save();
-        
-        participant.hint2=false;
+
+        participant.hint2 = false;
         await participant.save();
 
-        participant.hint3=true;
+        participant.hint3 = true;
         await participant.save();
 
         return res.status(200).json({ points: participant.points });
@@ -828,12 +832,12 @@ app.post("/updatepoints1", async (req, res) => {
     }
 });
 app.post("/updatepoints2", async (req, res) => {
-   
-    const { points,email } = req.body; // Reduce 10 points for hint
-    
+
+    const { points, email } = req.body; // Reduce 10 points for hint
+
     try {
         // Find participant by email
-        const participant = await Participant.findOne({ email: email }); 
+        const participant = await Participant.findOne({ email: email });
 
         if (!participant) {
             return res.status(404).json({ message: "Participant not found" });
@@ -845,8 +849,8 @@ app.post("/updatepoints2", async (req, res) => {
         // Update points in the database
         participant.points = updatedPoints;
         await participant.save();
-        
-        participant.hint3=false;
+
+        participant.hint3 = false;
         await participant.save();
 
         return res.status(200).json({ points: participant.points });
@@ -865,8 +869,8 @@ app.post("/gethints", async (req, res) => {
     }
 
     try {
-        const participant = await Participant.findOne({ email: email }); 
-        
+        const participant = await Participant.findOne({ email: email });
+
         if (!participant) {
             return res.status(404).json({ message: "Participant not found" });
         }
@@ -888,7 +892,7 @@ app.post("/gethints", async (req, res) => {
 // POST endpoint for verifying output
 app.post('/outputverify', async (req, res) => {
     try {
-        const { userOutput, output ,email } = req.body; // Get email from request
+        const { userOutput, output, email } = req.body; // Get email from request
 
         // Find the participant based on email
         const participant = await Participant.findOne({ email: email });
@@ -898,12 +902,12 @@ app.post('/outputverify', async (req, res) => {
         }
 
         if (userOutput.trim() === output.toString()) {
-            const sub = new Intl.DateTimeFormat('en-GB', { 
-                timeZone: 'Asia/Kolkata', 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
+            const sub = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kolkata',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
             }).format(new Date());
 
             // Store submission time in DB
@@ -988,7 +992,7 @@ app.get("/getpoints", async (req, res) => {
         if (participant.points < 0) participant.points = 0;
 
         await participant.save();
-        console.log("mydata",participant);
+        console.log("mydata", participant);
 
         res.json({ message: "Points updated successfully", points: participant.points });
 
@@ -1001,7 +1005,7 @@ app.get("/getpoints", async (req, res) => {
 
 app.get("/getsubmissiontime", async (req, res) => {
     const { email } = req.query; // Get email from query parameters
-    
+
     if (!email) {
         return res.status(400).json({ message: "Email is required" });
     }
@@ -1021,26 +1025,26 @@ app.get("/getsubmissiontime", async (req, res) => {
 app.get('/randomnumber', async (req, res) => {
     const { email } = req.query;
     if (!email) {
-      return res.status(400).json({ error: "Email parameter is required" });
+        return res.status(400).json({ error: "Email parameter is required" });
     }
-  
+
     try {
-      // Query the database for a participant with the provided email
-      const participant = await Participant.findOne({ email });
-      if (!participant) {
-        return res.status(404).json({ error: "Participant not found" });
-      }
-      // Return the random number from the participant's record
-      return res.json({ randomnum: participant.randomnumber });
+        // Query the database for a participant with the provided email
+        const participant = await Participant.findOne({ email });
+        if (!participant) {
+            return res.status(404).json({ error: "Participant not found" });
+        }
+        // Return the random number from the participant's record
+        return res.json({ randomnum: participant.randomnumber });
     } catch (error) {
-      console.error("Error fetching participant:", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+        console.error("Error fetching participant:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
-  });
+});
 
 // POST endpoint for compiling and running code
 app.post('/compile', async (req, res) => {
-    const { language, code, action,input, testcases, email } = req.body;
+    const { language, code, action, input, testcases, email } = req.body;
     console.log(language);
     console.log(code);
     console.log(input);
@@ -1048,20 +1052,59 @@ app.post('/compile', async (req, res) => {
         if (!language) {
             return res.status(400).send({ status: false, message: "Please select the language" });
         }
-    
+
         console.log("Received request - Language:", language);
         console.log("Code:", code);
         console.log("Input:", input);
-    
+
+        const uniqueId = uuidv4();
+        console.log("Unique ID for this run:", uniqueId);
+
+        const tempDir = path.join(path.dirname(new URL(import.meta.url).pathname), 'temp');
+        // Ensure the temp directory exists
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
+        }
+
+        // Create unique filenames for the source and input files
+        const sourceFile = path.join(tempDir, `${uniqueId}.${language === 'python' ? 'py' : 'cpp'}`);
+        const inputFile = path.join(tempDir, `${uniqueId}_input.txt`);
+
+        // Write the code and input to these files if needed by your compiler wrapper
+        fs.writeFileSync(sourceFile, code);
+        if (input) {
+            fs.writeFileSync(inputFile, input);
+        }
+
+        function cleanUpFiles(source, input) {
+            fs.unlink(source, (err) => {
+                if (err) {
+                    console.error("Error cleaning up source file:", err);
+                } else {
+                    console.log("Source file cleaned up:", source);
+                }
+            });
+            if (input) {
+                fs.unlink(input, (err) => {
+                    if (err) {
+                        console.error("Error cleaning up input file:", err);
+                    } else {
+                        console.log("Input file cleaned up:", input);
+                    }
+                });
+            }
+        }
+
+
         if (language === "python") {
             let envData = { OS: "linux" };
-    
+
             // Detect if the code is mistakenly C instead of Python
             const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
             if (isLikelyCCode) {
                 return res.status(400).send({ status: false, message: "The code appears to be C, but Python was selected." });
             }
-    
+
             try {
                 console.log("Calling Python Compiler...");
                 if (input) {
@@ -1095,17 +1138,17 @@ app.post('/compile', async (req, res) => {
                 console.error("Unexpected Error in Python Execution:", error);
                 res.status(500).send({ status: false, message: "Internal Server Error" });
             }
-        } 
-    
+        }
+
         else if (language === "cpp" || language === "c") {
-            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
-    
+            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 }, fileId: uniqueId, sourceFile, inputFile };
+
             // Detect if the code is mistakenly Python instead of C/C++
             const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
             if (isLikelyPython) {
                 return res.status(400).send({ status: false, message: "The code appears to be Python, but C/C++ was selected." });
             }
-    
+
             try {
                 console.log("Calling C/C++ Compiler...");
                 if (input) {
@@ -1124,6 +1167,8 @@ app.post('/compile', async (req, res) => {
                 } else {
                     compiler.compileCPP(envData, code, (data) => {
                         console.log("C/C++ Compilation Response (No Input):", data);
+                        cleanUpFiles(sourceFile)
+                        
                         if (!data) {
                             return res.status(500).send({ status: false, message: "No response from compiler" });
                         }
@@ -1141,8 +1186,8 @@ app.post('/compile', async (req, res) => {
             }
         }
     }
-    
-         else {
+
+    else {
         let failedCases = [];
         let passedCases = [];
         let failedCount = 0;
@@ -1150,19 +1195,19 @@ app.post('/compile', async (req, res) => {
 
         if (language === "python") {
             let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
-        
+
             promises = testcases.map((testcase) => {
                 return new Promise((resolve) => {
                     compiler.compilePythonWithInput(envData, code, testcase.input, (data) => {
                         if (data.error) {
                             return res.send({ status: "error", message: "Execution failed: " + data.error });
                         }
-        
-                        let compoutput=data.output.toString();
+
+                        let compoutput = data.output.toString();
 
                         let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
-        
+
                         if (actualOutput === expectedOutput) {
                             passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
                         } else {
@@ -1182,13 +1227,13 @@ app.post('/compile', async (req, res) => {
                         if (data.error) {
                             return res.send({ status: "error", message: "Compilation failed: " + data.error });
                         }
-                        let compoutput=data.output.toString();
+                        let compoutput = data.output.toString();
 
                         let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
 
-                        console.log("Actualoutput",actualOutput);
-                        console.log("expected output",expectedOutput);
+                        console.log("Actualoutput", actualOutput);
+                        console.log("expected output", expectedOutput);
 
                         if (actualOutput === expectedOutput) {
                             passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
@@ -1208,42 +1253,42 @@ app.post('/compile', async (req, res) => {
         if (failedCases.length === 0) {
             console.log("all are passed")
             console.log("pass", passedCases);
-           
+
             console.log("Myemail", currentUserEmail);
             const participant = await Participant.findOne({ email: email });
 
-           console.log(code);
+            console.log(code);
             participant.submittedCode = code;
             await participant.save();
 
-            participant.points=100;
+            participant.points = 100;
             await participant.save();
 
 
-            participant.language = language; 
+            participant.language = language;
             await participant.save();
 
 
 
-            const time = new Intl.DateTimeFormat('en-GB', { 
-                timeZone: 'Asia/Kolkata', 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
+            const time = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kolkata',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
             }).format(new Date());
 
-        
-            
+
+
             participant.round1submissiontime = time; // Store time as a string
             await participant.save();
 
-        
+
             return res.json({
                 status: "success",
                 message: "✅ All test cases passed!",
                 passedTestCases: passedCases,
-                subtime:time,
+                subtime: time,
             });
 
         } else {
@@ -1259,7 +1304,7 @@ app.post('/compile', async (req, res) => {
 });
 
 
-const port=process.env.PORT||5000;
+const port = process.env.PORT || 5000;
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
