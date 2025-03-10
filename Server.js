@@ -1079,7 +1079,7 @@ app.post('/compile', async (req, res) => {
         console.log("Language", language);
 
         if (language === "python") {
-            let envData = { OS: "windows" };
+            let envData = { OS: "linux" };
 
             // Validate if the provided code looks like C code by checking for common C patterns
             const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
@@ -1145,7 +1145,7 @@ app.post('/compile', async (req, res) => {
 
         else if (language === "cpp" || language === "c") {
             // Environment setup for C/C++ compilation
-            let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
 
             // Validate if the provided code looks like Python by checking for common Python patterns
             const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
@@ -1214,7 +1214,7 @@ app.post('/compile', async (req, res) => {
         let promises = [];
 
         if (language === "python") {
-            let envData = { OS: "windows", cmd: "python3", options: { timeout: 10000 } };
+            let envData = { OS: "linux", cmd: "python3", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
                 return promiseWithTimeout(new Promise((resolve) => {
@@ -1241,7 +1241,7 @@ app.post('/compile', async (req, res) => {
                 }), 30000);
             });
         } else if (language === "cpp" || language === "c") {
-            let envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
+            let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } };
 
             promises = testcases.map((testcase) => {
                 return promiseWithTimeout(new Promise((resolve) => {
