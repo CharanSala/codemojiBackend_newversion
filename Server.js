@@ -1085,85 +1085,144 @@ app.post('/compile', async (req, res) => {
         }
     
         // Introduce a slight delay to ensure the files are flushed
-        setTimeout(() => {
-            if (language === "python") {
-                let envData = { OS: "linux", fileId: uniqueId, sourceFile, inputFile };
-                const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
-                if (isLikelyCCode) {
-                    return res.status(400).send({ status: false, message: "The code appears to be C, but Python was selected." });
-                }
-                try {
-                    console.log("Calling Python Compiler...");
-                    if (input) {
-                        compiler.compilePythonWithInput(envData, code, input, (data) => {
-                            console.log("Python Compilation Response:", data);
-                            // Synchronous cleanup after receiving response
-                            try { fs.unlinkSync(sourceFile); if(input) fs.unlinkSync(inputFile); } catch(err) { console.error(err); }
-                            if (!data) {
-                                return res.status(500).send({ status: false, message: "No response from compiler" });
-                            }
-                            if (data.error) {
-                                return res.status(400).send({ status: false, message: data.error });
-                            }
-                            res.send({ status: true, output: data.output });
-                        });
-                    } else {
-                        compiler.compilePython(envData, code, (data) => {
-                            console.log("Python Compilation Response (No Input):", data);
-                            try { fs.unlinkSync(sourceFile); } catch(err) { console.error(err); }
-                            if (!data) {
-                                return res.status(500).send({ status: false, message: "No response from compiler" });
-                            }
-                            if (data.error) {
-                                return res.status(400).send({ status: false, message: data.error });
-                            }
-                            res.send({ status: true, output: data.output });
-                        });
-                    }
-                } catch (error) {
-                    console.error("Unexpected Error in Python Execution:", error);
-                    res.status(500).send({ status: false, message: "Internal Server Error" });
-                }
-            } else if (language === "cpp" || language === "c") {
-                let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 }, fileId: uniqueId, sourceFile, inputFile };
-                const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
-                if (isLikelyPython) {
-                    return res.status(400).send({ status: false, message: "The code appears to be Python, but C/C++ was selected." });
-                }
-                try {
-                    console.log("Calling C/C++ Compiler...");
-                    if (input) {
-                        compiler.compileCPPWithInput(envData, code, input, (data) => {
-                            console.log("C/C++ Compilation Response:", data);
-                            try { fs.unlinkSync(sourceFile); if(input) fs.unlinkSync(inputFile); } catch(err) { console.error(err); }
-                            if (!data) {
-                                return res.status(500).send({ status: false, message: "No response from compiler" });
-                            }
-                            if (data.error) {
-                                return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
-                            }
-                            res.send({ status: true, output: data.output || "No output" });
-                        });
-                    } else {
-                        compiler.compileCPP(envData, code, (data) => {
-                            console.log("C/C++ Compilation Response (No Input):", data);
-                            try { fs.unlinkSync(sourceFile); } catch(err) { console.error(err); }
-                            if (!data) {
-                                return res.status(500).send({ status: false, message: "No response from compiler" });
-                            }
-                            if (data.error) {
-                                return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
-                            }
-                            res.send({ status: true, output: data.output || "No output" });
-                        });
-                    }
-                } catch (error) {
-                    console.error("Unexpected Error in C/C++ Execution:", error);
-                    res.status(500).send({ status: false, message: "Internal Server Error" });
-                }
+        import { v4 as uuidv4 } from 'uuid';
+        import fs from 'fs';
+        import path from 'path';
+        
+        if (action === "run") {
+          if (!language) {
+            return res.status(400).send({ status: false, message: "Please select the language" });
+          }
+        
+          console.log("Received request - Language:", language);
+          console.log("Code:", code);
+          console.log("Input:", input);
+        
+          // Generate a unique identifier and create a dedicated temporary directory for this run.
+          const uniqueId = uuidv4();
+          console.log("Unique ID for this run:", uniqueId);
+        
+          const tempDir = path.join(path.dirname(new URL(import.meta.url).pathname), 'temp', uniqueId);
+          fs.mkdirSync(tempDir, { recursive: true });
+        
+          // Determine file extensions and filenames.
+          const sourceExtension = language === 'python' ? 'py' : 'cpp';
+          const sourceFile = path.join(tempDir, `${uniqueId}.${sourceExtension}`);
+          const inputFile = path.join(tempDir, `${uniqueId}_input.txt`);
+        
+          // Write source code and input synchronously.
+          fs.writeFileSync(sourceFile, code);
+          if (input) {
+            fs.writeFileSync(inputFile, input);
+            // Log input file content to verify it’s correctly written.
+            const fileContent = fs.readFileSync(inputFile, 'utf8');
+            console.log("Input file content:", fileContent);
+          }
+        
+          // Synchronously remove the entire temporary directory.
+          function cleanUpFiles(dir) {
+            try {
+              fs.rmSync(dir, { recursive: true, force: true });
+              console.log("Cleaned up temporary directory:", dir);
+            } catch (err) {
+              console.error("Error cleaning up temp directory:", err);
             }
-        }, 1000); // 1000ms delay
-    }
+          }
+        
+          // Increase delay to ensure file writes are fully flushed (adjust delay as needed).
+          setTimeout(() => {
+            if (language === "python") {
+              let envData = { OS: "linux", fileId: uniqueId, sourceFile, inputFile };
+        
+              // Check if the code is mistakenly C.
+              const isLikelyCCode = /#include\s+<.*?>|int\s+main\s*\(/.test(code);
+              if (isLikelyCCode) {
+                return res.status(400).send({ status: false, message: "The code appears to be C, but Python was selected." });
+              }
+        
+              try {
+                console.log("Calling Python Compiler...");
+                if (input) {
+                  compiler.compilePythonWithInput(envData, code, input, (data) => {
+                    console.log("Python Compilation Response:", data);
+                    cleanUpFiles(tempDir);
+                    if (!data) {
+                      return res.status(500).send({ status: false, message: "No response from compiler" });
+                    }
+                    if (data.error) {
+                      console.error("Python Compilation Error:", data.error);
+                      return res.status(400).send({ status: false, message: data.error });
+                    }
+                    console.log("Python Output:", data.output);
+                    res.send({ status: true, output: data.output });
+                  });
+                } else {
+                  compiler.compilePython(envData, code, (data) => {
+                    console.log("Python Compilation Response (No Input):", data);
+                    cleanUpFiles(tempDir);
+                    if (!data) {
+                      return res.status(500).send({ status: false, message: "No response from compiler" });
+                    }
+                    if (data.error) {
+                      console.error("Python Compilation Error:", data.error);
+                      return res.status(400).send({ status: false, message: data.error });
+                    }
+                    console.log("Python Output:", data.output);
+                    res.send({ status: true, output: data.output });
+                  });
+                }
+              } catch (error) {
+                console.error("Unexpected Error in Python Execution:", error);
+                res.status(500).send({ status: false, message: "Internal Server Error" });
+              }
+            } else if (language === "cpp" || language === "c") {
+              let envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 }, fileId: uniqueId, sourceFile, inputFile };
+        
+              // Check if the code is mistakenly Python.
+              const isLikelyPython = /def\s+\w+\(|import\s+\w+|print\s*\(/.test(code);
+              if (isLikelyPython) {
+                return res.status(400).send({ status: false, message: "The code appears to be Python, but C/C++ was selected." });
+              }
+        
+              try {
+                console.log("Calling C/C++ Compiler...");
+                if (input) {
+                  compiler.compileCPPWithInput(envData, code, input, (data) => {
+                    console.log("C/C++ Compilation Response:", data);
+                    cleanUpFiles(tempDir);
+                    if (!data) {
+                      return res.status(500).send({ status: false, message: "No response from compiler" });
+                    }
+                    if (data.error) {
+                      console.error("C/C++ Compilation Error:", data.error);
+                      return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
+                    }
+                    console.log("C/C++ Output:", data.output);
+                    res.send({ status: true, output: data.output || "No output" });
+                  });
+                } else {
+                  compiler.compileCPP(envData, code, (data) => {
+                    console.log("C/C++ Compilation Response (No Input):", data);
+                    cleanUpFiles(tempDir);
+                    if (!data) {
+                      return res.status(500).send({ status: false, message: "No response from compiler" });
+                    }
+                    if (data.error) {
+                      console.error("C/C++ Compilation Error:", data.error);
+                      return res.status(400).send({ status: false, message: "Compilation failed: " + data.error });
+                    }
+                    console.log("C/C++ Output:", data.output);
+                    res.send({ status: true, output: data.output || "No output" });
+                  });
+                }
+              } catch (error) {
+                console.error("Unexpected Error in C/C++ Execution:", error);
+                res.status(500).send({ status: false, message: "Internal Server Error" });
+              }
+            }
+          }, 1500); // Delay of 1500ms (adjust if necessary)
+        }
+        
 
     else {
         let failedCases = [];
