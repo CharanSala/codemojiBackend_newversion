@@ -334,38 +334,50 @@ app.get("/leaderboard", async (req, res) => {
         const sortedLeaderboard = participants
             .filter(participant => participant.points > 0)
             .map(participant => {
-                // Convert submission times to seconds for sorting
-                const round1Time = timeToSeconds(participant.round1submissiontime);
-                const round2Time = timeToSeconds(participant.round2submissiontime);
-                const round3Time = timeToSeconds(participant.round3submissiontime);
+                // Convert submission times to seconds for sorting; if not submitted, default to Infinity
+                const round1Time = participant.round1submissiontime ? timeToSeconds(participant.round1submissiontime) : Infinity;
+                const round2Time = participant.round2submissiontime ? timeToSeconds(participant.round2submissiontime) : Infinity;
+                const round3Time = participant.round3submissiontime ? timeToSeconds(participant.round3submissiontime) : Infinity;
 
-                // Determine the latest round the participant has submitted
+                // Determine the latest round submitted (round3 > round2 > round1)
                 let latestRound = 0;
-                if (participant.round3submissiontime) latestRound = 3;
-                else if (participant.round2submissiontime) latestRound = 2;
-                else if (participant.round1submissiontime) latestRound = 1;
+                if (participant.round3submissiontime) {
+                    latestRound = 3;
+                } else if (participant.round2submissiontime) {
+                    latestRound = 2;
+                } else if (participant.round1submissiontime) {
+                    latestRound = 1;
+                }
 
                 return {
                     email: participant.email,
-                    points: participant.points || 0, // Default to 0 if undefined
+                    points: participant.points || 0,
                     latestRound,
-                    round1Time: participant.round1submissiontime ? round1Time : Infinity,
-                    round2Time: participant.round2submissiontime ? round2Time : Infinity,
-                    round3Time: participant.round3submissiontime ? round3Time : Infinity
+                    round1Time,
+                    round2Time,
+                    round3Time
                 };
             })
-            // Sorting logic based on latest round submitted
             .sort((a, b) => {
+                // First, sort by points descending
                 if (b.points !== a.points) {
-                    return b.points - a.points; // Higher points first
+                    return b.points - a.points;
                 }
-                if (a.latestRound === 3 && b.latestRound === 3) {
-                    return a.round3Time - b.round3Time; // Sort by round3 time if both submitted
+                // Next, sort by the number of rounds submitted descending
+                if (b.latestRound !== a.latestRound) {
+                    return b.latestRound - a.latestRound;
                 }
-                if (a.latestRound === 2 && b.latestRound === 2) {
-                    return a.round2Time - b.round2Time; // Sort by round2 time if both submitted
+                // If both points and rounds are equal, sort by the submission time of the latest round (faster submission wins)
+                switch (a.latestRound) {
+                    case 3:
+                        return a.round3Time - b.round3Time;
+                    case 2:
+                        return a.round2Time - b.round2Time;
+                    case 1:
+                        return a.round1Time - b.round1Time;
+                    default:
+                        return 0;
                 }
-                return a.round1Time - b.round1Time; // Default to round1 sorting
             });
 
         res.json(sortedLeaderboard);
@@ -374,6 +386,7 @@ app.get("/leaderboard", async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 // Helper function to convert HH:MM:SS to total seconds
 function timeToSeconds(time) {
