@@ -1226,6 +1226,9 @@ app.post('/compile', async (req, res) => {
                         let actualOutput = compoutput.trim();
                         let expectedOutput = testcase.expectedOutput.trim();
 
+                        console.log("Actualoutput",actualOutput);
+                        console.log("expected output",expectedOutput);
+
                         if (actualOutput === expectedOutput) {
                             passedCases.push({ input: testcase.input, expected: expectedOutput, got: actualOutput });
                         } else {
