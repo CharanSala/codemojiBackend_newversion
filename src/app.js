@@ -1,0 +1,50 @@
+import express from "express";
+import cors from "cors";
+import userRoutes from "../routes/user.route.js";
+import usersignupRoute from "../routes/usersignup.route.js";
+import getuser from "../routes/getuser.router.js";
+import verify1 from "../routes/verifylogicpatch1.route.js";
+import verify from "../routes/verifylogicpatch2.route.js";
+import getpoints from "../routes/getpoints.router.js";
+import compile from "../routes/run.router.js";
+import save from "../routes/savecode.router.js";
+import getparticipant from "../routes/getparticipant.route.js";
+import output from "../routes/outputverify.route.js";
+import update from "../routes/updatepoints.route.js";
+import hints from "../routes/gethints.route.js";
+import resetRoute from "../routes/replay.router.js";
+import autosubmit from "../routes/timeup2.router.js";
+import autosubmit1 from "../routes/timeup1.router.js";
+import autosubmit3 from "../routes/timeup3.router.js";
+import round1start from "../routes/round1start.router.js";
+import round2Routes from "../routes/round2.router.js";
+import round3Routes from "../routes/round3.routes.js";
+import leaderboard from "../routes/leaderboard.router.js";
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use("/api/users", userRoutes);
+app.use("/api/signup", usersignupRoute);
+app.use("/api/get", getuser);
+app.use("/api/logicpatch1", verify1);
+app.use("/api/logicpatch2", verify);
+app.use("/api/getpoints", getpoints);
+app.use("/api/compilecode", compile);
+app.use("/api/save", save);
+app.use("/api/get", getparticipant);
+app.use("/api/output", output);
+app.use("/api/update", update);
+app.use("/api/gethint", hints);
+app.use("/api/replay", resetRoute);
+
+app.use("/api/autosubmit", autosubmit);
+app.use("/api/autosubmit1", autosubmit1);
+app.use("/api/autosubmit3", autosubmit3);
+app.use("/api/roundstart", round1start);
+app.use("/api", round2Routes);
+app.use("/api", round3Routes);
+app.use("/api/lead", leaderboard);
+
+export default app;
