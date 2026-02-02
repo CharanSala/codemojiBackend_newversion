@@ -1,6 +1,6 @@
 import express from "express";
 import { updatePoints } from "../controllers/updatepoints.controller.js";
-
+import { authMiddleware } from "../middleware/auth.js";
 const router = express.Router();
 
 // hint 1 → cost 10
