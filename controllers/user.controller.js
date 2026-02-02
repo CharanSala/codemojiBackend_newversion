@@ -1,6 +1,6 @@
-import Participant from "../models/user.model.js"; // ✅ correct
-
+import Participant from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const verifyParticipant = async (req, res) => {
   try {
@@ -24,14 +24,28 @@ export const verifyParticipant = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password!" });
     }
 
+    // 👇 Assign random number if first time
     if (participant.randomnumber === 0) {
       participant.randomnumber = Math.floor(Math.random() * 5) + 1;
       await participant.save();
     }
 
+    // ✅ GENERATE JWT TOKEN
+    const token = jwt.sign(
+      {
+        id: participant._id,
+        email: participant.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES || "1d" },
+    );
+
     res.json({
       message: "Login successful!",
       email: participant.email,
+
+      // 👇 SEND TOKEN TO FRONTEND
+      token,
     });
   } catch (error) {
     console.error("❌ Error verifying participant:", error.message);
