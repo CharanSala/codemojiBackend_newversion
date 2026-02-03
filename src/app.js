@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import userRoutes from "./routes/getuser.router.js";
+import userRoutes from "./routes/user.route.js";
 import usersignupRoute from "./routes/usersignup.route.js";
 import getuser from "./routes/getuser.router.js";
 import verify1 from "./routes/verifylogicpatch1.route.js";
