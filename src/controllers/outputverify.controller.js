@@ -1,87 +1,97 @@
 import Participant from "../models/user.model.js";
-import nodemailer from "nodemailer";
+import axios from "axios";
 
 export const outputverify = async (req, res) => {
   try {
     const { userOutput, output, email } = req.body;
 
+    // 1️⃣ Find participant
     const participant = await Participant.findOne({ email });
 
     if (!participant) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Participant not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Participant not found",
+      });
     }
 
-    if (userOutput.trim() === output.toString()) {
-      const sub = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Kolkata",
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }).format(new Date());
-
-      // Save submission time
-      participant.round3submissiontime = sub;
-      await participant.save();
-
-      // ================= SEND MAIL ==================
-
-      const transporter = nodemailer.createTransport({
-        host: "smtp-relay.brevo.com",
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.BREVO_USER,
-          pass: process.env.BREVO_KEY,
-        },
-      });
-
-      await transporter.sendMail({
-        to: email,
-        subject: "CodeMoji – Result",
-        text: `
-Hi ${participant.name},
-
-Thank you for participating in the CodeMoji event! Congratulations on successfully completing all three rounds. Here are your results:
-
-Logic Patch   
-Submission Time: ${participant.round1submissiontime}
-
-Emoji Decryption
-Submission Time: ${participant.round2submissiontime}
-
-Code Unreveal 
-Submission Time: ${participant.round3submissiontime}
-
-
-Final Emojies : ${participant.points}
-
-We truly appreciate your enthusiasm, creativity, and problem-solving spirit throughout the event. Keep exploring, keep learning, and continue turning challenges into opportunities!
-
-Wishing you great success ahead 🚀  
-– Team CodeMoji
-  `,
-      });
-
-      // ===============================================
-
-      return res.json({
-        success: true,
-        submissionTime: sub,
-        message: "Submitted successfully & mail sent",
-      });
-    } else {
+    // 2️⃣ Check Output
+    if (userOutput.trim() !== output.toString()) {
       return res.json({
         success: false,
         message: "Incorrect output",
       });
     }
-  } catch (error) {
-    console.error("Error verifying output:", error);
 
-    res.status(500).json({
+    // 3️⃣ Generate submission time (IST)
+    const submissionTime = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(new Date());
+
+    participant.round3submissiontime = submissionTime;
+    await participant.save();
+
+    // 4️⃣ Send Email via Brevo API (HTTPS - works on Render)
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          name: "CodeMoji",
+          email: "salacharan81@gmail.com", // Must be verified in Brevo
+        },
+        to: [
+          {
+            email: email,
+            name: participant.name,
+          },
+        ],
+        subject: "CodeMoji – Result",
+        textContent: `Hi ${participant.name},
+
+Thank you for participating in the CodeMoji event! 🎉
+
+Congratulations on successfully completing all three rounds.
+
+Here are your results:
+
+Logic Patch
+Submission Time: ${participant.round1submissiontime}
+
+Emoji Decryption
+Submission Time: ${participant.round2submissiontime}
+
+Code Unreveal
+Submission Time: ${participant.round3submissiontime}
+
+Final Emojies: ${participant.points}
+
+We truly appreciate your enthusiasm and creativity.
+
+Keep coding 🚀
+– Team CodeMoji`,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_KEY,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    // 5️⃣ Success Response
+    return res.json({
+      success: true,
+      submissionTime,
+      message: "Submitted successfully & mail sent",
+    });
+  } catch (error) {
+    console.error("Error verifying output:", error.response?.data || error);
+
+    return res.status(500).json({
       success: false,
       message: "Server error",
     });
