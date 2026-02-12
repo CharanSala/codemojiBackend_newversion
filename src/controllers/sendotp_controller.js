@@ -22,11 +22,16 @@ export const sendotp = async (req, res) => {
 
   otpStore[email] = otp;
 
-  let transporter = nodemailer.createTransport({
-    service: "gmail",
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // true only for 465
     auth: {
       user: process.env.EMAIL,
-      pass: process.env.PASSWORD,
+      pass: process.env.EMAIL_APP_PASSWORD,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
 
