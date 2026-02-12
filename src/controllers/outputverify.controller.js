@@ -38,7 +38,7 @@ export const outputverify = async (req, res) => {
 
       await transporter.sendMail({
         to: email,
-        subject: "CodeMoji – Round 3 Result",
+        subject: "CodeMoji – Result",
         text: `
 Hi ${participant.name},
 
