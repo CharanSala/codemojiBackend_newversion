@@ -1,27 +1,33 @@
 import Participant from "../models/user.model.js";
-import nodemailer from "nodemailer";
+import axios from "axios";
 
 const sendMail = async (email, subject, text) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.BREVO_USER,
-      pass: process.env.BREVO_KEY,
+  await axios.post(
+    "https://api.brevo.com/v3/smtp/email",
+    {
+      sender: {
+        name: "CodeMoji",
+        email: "salacharan81@gmail.com", // must be verified in Brevo
+      },
+      to: [
+        {
+          email: email,
+        },
+      ],
+      subject: subject,
+      textContent: text,
     },
-  });
-
-  await transporter.sendMail({
-    to: email,
-    subject,
-    text,
-  });
+    {
+      headers: {
+        "api-key": process.env.BREVO_KEY,
+        "Content-Type": "application/json",
+      },
+    },
+  );
 };
 
 export const checkSessions = async () => {
   const now = new Date();
-
   const users = await Participant.find();
 
   for (let p of users) {
@@ -37,7 +43,7 @@ export const checkSessions = async () => {
 
 Your Round 1 time is completed but you haven't started Round 2.
 
-Please login and continue your session to complete the event.
+Please login and continue your session.
 
 – Team CodeMoji`,
         );
