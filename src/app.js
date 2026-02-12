@@ -20,6 +20,8 @@ import round1start from "./routes/round1start.router.js";
 import round2Routes from "./routes/round2.router.js";
 import round3Routes from "./routes/round3.routes.js";
 import leaderboard from "./routes/leaderboard.router.js";
+import otpsend from "./routes/sendotp_router.js";
+import otpverify from "./routes/verifyotp_router.js";
 const app = express();
 
 app.use(cors());
@@ -46,5 +48,6 @@ app.use("/api/roundstart", round1start);
 app.use("/api", round2Routes);
 app.use("/api", round3Routes);
 app.use("/api/lead", leaderboard);
-
+app.use("/api/send", otpsend);
+app.use("/api/verify", otpverify);
 export default app;
