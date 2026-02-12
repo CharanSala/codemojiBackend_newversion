@@ -23,15 +23,12 @@ export const sendotp = async (req, res) => {
   otpStore[email] = otp;
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
+    host: "smtp-relay.brevo.com",
     port: 587,
-    secure: false, // true only for 465
+    secure: false,
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_APP_PASSWORD,
-    },
-    tls: {
-      rejectUnauthorized: false,
+      user: process.env.BREVO_USER,
+      pass: process.env.BREVO_KEY,
     },
   });
 

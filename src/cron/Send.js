@@ -2,11 +2,13 @@ import Participant from "../models/user.model.js";
 import nodemailer from "nodemailer";
 
 const sendMail = async (email, subject, text) => {
-  let transporter = nodemailer.createTransport({
-    service: "gmail",
+  const transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.PASSWORD,
+      user: process.env.BREVO_USER,
+      pass: process.env.BREVO_KEY,
     },
   });
 
